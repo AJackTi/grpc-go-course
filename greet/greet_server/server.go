@@ -39,7 +39,7 @@ func (s *server) GreetManyTimes(req *greetpb.GreetManyTimesRequest, stream greet
 }
 
 func (s *server) LongGreet(stream greetpb.GreetService_LongGreetServer) error {
-	fmt.Printf("LongGreet function was invoked with a streaming request")
+	fmt.Printf("LongGreet function was invoked with a streaming request\n")
 	result := ""
 	for {
 		req, err := stream.Recv()
@@ -49,10 +49,32 @@ func (s *server) LongGreet(stream greetpb.GreetService_LongGreetServer) error {
 		}
 		if err != nil {
 			log.Fatalf("Error while reading client stream: %v\n", err)
+			return err
 		}
 		firstName := req.GetGreeting().GetFirstName()
 		lastName := req.GetGreeting().GetLastName()
 		result += fmt.Sprintf("Hello %s%s, ", firstName, lastName)
+	}
+}
+
+func (s *server) GreetEveryone(stream greetpb.GreetService_GreetEveryoneServer) error {
+	fmt.Printf("GreetEveryone function was invoked with a streaming request\n")
+
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			log.Fatalf("Error while reading stream: %v\n", err)
+			return err
+		}
+		firstName := req.GetGreeting().GetFirstName()
+		result := "Hello " + firstName + "!"
+		if sendErr := stream.Send(&greetpb.GreetEveryoneResponse{Result: result}); sendErr != nil {
+			log.Fatalf("Error while sending data to client: %v\n", sendErr)
+			return sendErr
+		}
 	}
 }
 
