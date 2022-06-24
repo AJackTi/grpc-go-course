@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/AJackTi/grpc-go-course/calculator/calculatorpb"
 	"google.golang.org/grpc"
+	"io"
 	"log"
 	"net"
 )
@@ -41,6 +42,25 @@ func (s *server) PrimeNumberDecomposition(req *calculatorpb.PrimeNumberDecomposi
 	}
 
 	return nil
+}
+
+func (s *server) ComputeAverage(stream calculatorpb.CalculatorService_ComputeAverageServer) error {
+	fmt.Printf("Received ComputeAverage RPC\n")
+
+	sum := int64(0)
+	count := 0
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			average := float64(sum) / float64(count)
+			return stream.SendAndClose(&calculatorpb.ComputeAverageResponse{Average: average})
+		}
+		if err != nil {
+			log.Fatalf("Error while reading client stream: %v\n", err)
+		}
+		sum += req.GetNumber()
+		count++
+	}
 }
 
 func main() {
